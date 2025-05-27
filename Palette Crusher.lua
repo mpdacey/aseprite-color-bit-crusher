@@ -10,6 +10,22 @@ function Clamp(x, minVal, maxVal)
 	return math.max(math.min(x, maxVal), minVal)
 end
 
+function CrushChannel(colorValue, bitValue)
+	local purgeBits = 8 - bitValue
+	
+	-- Shift bits to the right
+	colorValue = colorValue >> purgeBits
+	
+	-- Shift the bits back if they don't match white
+	if colorValue == BYTE_DECIMAL >> purgeBits then
+		colorValue = BYTE_DECIMAL
+	else
+		colorValue = colorValue << purgeBits
+	end
+	
+	return colorValue
+end
+
 -- Crushes and clamps a given pixel to the nearest specified bit.
 -- Parameters:
 -- - pc:      The pixel color in app
@@ -26,30 +42,9 @@ function CrushColor(pc, pixel, bits)
 	local green = pc.rgbaG(pixel)
 	local blue = pc.rgbaB(pixel)
 	
-	-- Shift bits to the right
-	local purgeBits = 8 - bits
-	red = red >> purgeBits
-	green = green >> purgeBits
-	blue = blue >> purgeBits
-	
-	-- Shift the bits back if they don't match white
-	if red == 255 >> purgeBits then
-		red = 255
-	else
-		red = red << purgeBits
-	end
-	
-	if green == 255 >> purgeBits then
-		green = 255
-	else
-		green = green << purgeBits
-	end
-	
-	if blue == 255 >> purgeBits then
-		blue = 255
-	else
-		blue = blue << purgeBits
-	end
+	red = CrushChannel(red, bits)
+	green = CrushChannel(green, bits)
+	blue = CrushChannel(blue, bits)
 	
 	local newPixel = pc.rgba(red, green, blue, pc.rgbaA(pixel))
 	return newPixel
