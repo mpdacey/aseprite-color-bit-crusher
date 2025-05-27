@@ -10,6 +10,11 @@ function Clamp(x, minVal, maxVal)
 	return math.max(math.min(x, maxVal), minVal)
 end
 
+-- Crushes a color channel to the nearest specified bit
+-- Parameters:
+-- - colorValue:  The value of a pixel's color channel
+-- - bitValue:    How many bits should be used when determining the crushed color
+-- Returns the crushed color value.
 function CrushChannel(colorValue, bitValue)
 	local purgeBits = 8 - bitValue
 	
@@ -41,12 +46,17 @@ function CrushColor(pc, pixel, bits)
 	local red = pc.rgbaR(pixel)
 	local green = pc.rgbaG(pixel)
 	local blue = pc.rgbaB(pixel)
+	local alpha = pc.rgbaA(pixel)
 	
-	red = CrushChannel(red, bits)
-	green = CrushChannel(green, bits)
-	blue = CrushChannel(blue, bits)
+	red = CrushChannel(red, bits.r)
+	green = CrushChannel(green, bits.g)
+	blue = CrushChannel(blue, bits.b)
 	
-	local newPixel = pc.rgba(red, green, blue, pc.rgbaA(pixel))
+	if bits.a >= 0 then
+		alpha = CrushChannel(alpha, bits.a)
+	end
+	
+	local newPixel = pc.rgba(red, green, blue, alpha)
 	return newPixel
 end
 
@@ -57,9 +67,7 @@ end
 -- - bits:    Specified bits that an image should be crushed to.
 function CrushImage(base, pc, bits)
     local crunched = base:clone()
-	-- Clamp bits to 
-	bits = Clamp(bits, 1, 8)
-		
+	
     -- Iterates through each pixel in base
     for y = 0, base.height, 1 do
         for x = 0, base.width, 1 do
@@ -80,15 +88,27 @@ local pc = app.pixelColor
 
 -- Dialog window for inputting variables
 local dlg = Dialog("Color Bit Crusher")
-    dlg:number{ id="bits", label="How many bits per byte are crushed:", text="", decimals=integer}
+    dlg:number{ id="universalBits", label="Nth-bit per channel:", text="", decimals=integer}
+    dlg:newrow()
+	dlg:check{ id="includeAlpha", label="Crush alpha channel:", selected=false}
     dlg:newrow()
     dlg:button{ id="confirm", text="Confirm" }
     dlg:button{ id="cancel", text="Cancel" }
     dlg:show()
 
 local data = dlg.data
-local bits = data.bits
+local universalBits = Clamp(data.universalBits, 1, 8)
 if data.confirm then
+	local bits = {};
+	bits.r = universalBits
+	bits.g = universalBits
+	bits.b = universalBits
+	bits.a = -1
+	
+	if data.includeAlpha then
+		bits.a = universalBits
+	end
+	
 	-- Allows undo functionality
     cel.image = CrushImage(base, pc, bits)
 
