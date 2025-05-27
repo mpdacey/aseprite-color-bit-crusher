@@ -16,6 +16,10 @@ end
 -- - bitValue:    How many bits should be used when determining the crushed color
 -- Returns the crushed color value.
 function CrushChannel(colorValue, bitValue)
+	if bitValue == 0 then
+		return 0
+	end
+
 	local purgeBits = 8 - bitValue
 	
 	-- Shift bits to the right
@@ -88,25 +92,61 @@ local pc = app.pixelColor
 
 -- Dialog window for inputting variables
 local dlg = Dialog("Color Bit Crusher")
-    dlg:number{ id="universalBits", label="Nth-bit per channel:", text="", decimals=integer}
+    dlg:number{ id="universalBits", label="All channels bits:", text="0", decimals=integer }
     dlg:newrow()
-	dlg:check{ id="includeAlpha", label="Crush alpha channel:", selected=false}
+    dlg:number{ id="bitsR", label="Red channel bits:", text="0", decimals=integer, visible = false }
+    dlg:newrow()
+    dlg:number{ id="bitsG", label="Green channel bits:", text="0", decimals=integer, visible = false }
+    dlg:newrow()
+    dlg:number{ id="bitsB", label="Blue channel bits:", text="0", decimals=integer, visible = false }
+    dlg:newrow()
+    dlg:number{ id="bitsA", label="Alpha channel bits:", text="0", decimals=integer, visible = false }
+    dlg:newrow()
+	dlg:separator{}
+	dlg:check{ id="seperateChannels", label="Seperate channels:", selected=false, onclick= 
+		function()
+			local universalBits = dlg.data.universalBits
+		
+			dlg:modify{ id="universalBits", visible = not dlg.data.seperateChannels }
+			dlg:modify{ id="bitsR", text=universalBits, visible = dlg.data.seperateChannels }
+			dlg:modify{ id="bitsG", text=universalBits, visible = dlg.data.seperateChannels }
+			dlg:modify{ id="bitsB", text=universalBits, visible = dlg.data.seperateChannels }
+			dlg:modify{ id="bitsA", text=universalBits, visible = dlg.data.seperateChannels and dlg.data.includeAlpha }
+		end
+	}
+    dlg:newrow()
+	dlg:check{ id="includeAlpha", label="Include alpha channel:", selected=false, onclick=
+		function()
+			dlg:modify{ id="bitsA", visible = dlg.data.seperateChannels and dlg.data.includeAlpha }
+		end
+	}
     dlg:newrow()
     dlg:button{ id="confirm", text="Confirm" }
     dlg:button{ id="cancel", text="Cancel" }
     dlg:show()
 
 local data = dlg.data
-local universalBits = Clamp(data.universalBits, 1, 8)
 if data.confirm then
 	local bits = {};
-	bits.r = universalBits
-	bits.g = universalBits
-	bits.b = universalBits
 	bits.a = -1
 	
-	if data.includeAlpha then
-		bits.a = universalBits
+	-- Set bits for each channel based on checks
+	if data.seperateChannels then
+		bits.r = Clamp(data.bitsR, 0, 8)
+		bits.g = Clamp(data.bitsG, 0, 8)
+		bits.b = Clamp(data.bitsB, 0, 8)
+		if data.includeAlpha then
+			bits.a = Clamp(data.bitsA, 0, 8)
+		end
+	else
+		local universalBits = Clamp(data.universalBits, 0, 8)
+		bits.r = universalBits
+		bits.g = universalBits
+		bits.b = universalBits
+		
+		if data.includeAlpha then
+			bits.a = universalBits
+		end
 	end
 	
 	-- Allows undo functionality
