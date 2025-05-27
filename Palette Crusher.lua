@@ -15,7 +15,8 @@ end
 -- - pc:      The pixel color in app
 -- - pixel:   Selected pixel value.
 -- - bits:    Number of bits to constrain the colors to.
-function CrushColorCorrectly(pc, pixel, bits)
+-- Returns crushed color
+function CrushColor(pc, pixel, bits)
 	if pc.rgbaA(pixel) == 0 then
 		return pixel
 	end
@@ -67,7 +68,7 @@ function CrushImage(base, pc, bits)
     -- Iterates through each pixel in base
     for y = 0, base.height, 1 do
         for x = 0, base.width, 1 do
-			crunched:drawPixel(x, y, CrushColorCorrectly(pc, base:getPixel(x,y), bits))
+			crunched:drawPixel(x, y, CrushColor(pc, base:getPixel(x,y), bits))
         end
     end
 
